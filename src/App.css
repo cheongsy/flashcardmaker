@@ -33,6 +33,43 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  flex-wrap: wrap;
+}
+
+.topbar__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.deck-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deck-selector__label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.deck-selector__select {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+}
+
+.deck-selector__select:focus-visible {
+  border-color: rgba(255, 45, 149, 0.6);
+  box-shadow: 0 0 0 4px rgba(255, 45, 149, 0.2);
 }
 
 .brand__title {
@@ -107,6 +144,88 @@
   border-color: rgba(255, 193, 7, 0.4);
   color: #ffc107;
   font-weight: 700;
+}
+
+.deck-info {
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(255, 45, 149, 0.08) 0%, rgba(255, 79, 184, 0.05) 100%);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.deck-info__title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.deck-info__desc {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.deck-overview {
+  margin-top: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.deck-overview__title {
+  font-weight: 900;
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.deck-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.deck-overview__card {
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  color: var(--text);
+}
+
+.deck-overview__card:hover {
+  background: rgba(255, 45, 149, 0.1);
+  border-color: rgba(255, 45, 149, 0.3);
+  transform: translateY(-2px);
+}
+
+.deck-overview__card--active {
+  background: linear-gradient(135deg, rgba(255, 45, 149, 0.15) 0%, rgba(255, 79, 184, 0.1) 100%);
+  border-color: rgba(255, 45, 149, 0.5);
+  box-shadow: 0 4px 12px rgba(255, 45, 149, 0.2);
+}
+
+.deck-overview__level {
+  font-size: 16px;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.deck-overview__count {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.deck-overview__desc {
+  font-size: 12px;
+  color: var(--muted);
+  opacity: 0.8;
 }
 
 .card {

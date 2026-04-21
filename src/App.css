@@ -102,6 +102,13 @@
   border-color: rgba(255, 45, 149, 0.4);
 }
 
+.pill--info {
+  background: rgba(255, 193, 7, 0.15);
+  border-color: rgba(255, 193, 7, 0.4);
+  color: #ffc107;
+  font-weight: 700;
+}
+
 .card {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);

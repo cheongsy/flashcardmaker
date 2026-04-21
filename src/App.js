@@ -39,6 +39,8 @@ function App() {
     }
   });
 
+  const [isShuffled, setIsShuffled] = useState(false);
+
   const [activeIndex, setActiveIndex] = useState(0);
   const activeCard = cards[activeIndex] ?? null;
 
@@ -104,6 +106,41 @@ function App() {
 
   const deleteCard = useCallback((id) => {
     setCards((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  const shuffleCards = useCallback(() => {
+    setCards((prev) => {
+      if (prev.length === 0) return prev;
+      // Fisher-Yates shuffle algorithm
+      const shuffled = [...prev];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled;
+    });
+    setIsShuffled(true);
+    setActiveIndex(0);
+  }, []);
+
+  const resetOrder = useCallback(() => {
+    // Reload original order from localStorage
+    try {
+      const raw = localStorage.getItem(CARDS_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setCards(parsed);
+          setIsShuffled(false);
+          setActiveIndex(0);
+          return;
+        }
+      }
+    } catch {
+      // Fallback: just disable shuffle flag
+    }
+    setIsShuffled(false);
+    setActiveIndex(0);
   }, []);
 
   const downloadCSV = useCallback(() => {
@@ -238,14 +275,28 @@ function App() {
               <div className="pill" aria-label="Score">
                 Score: <b>{stats.correct}</b>/<b>{stats.attempted}</b> ({accuracy}%)
               </div>
+              {isShuffled && (
+                <div className="pill pill--info" aria-label="Shuffled mode active">
+                  🔀 Shuffled
+                </div>
+              )}
               {cards.length > 0 && (
-                <button
-                  className="pill pill--btn"
-                  onClick={downloadCSV}
-                  aria-label="Download deck as CSV"
-                >
-                  ⬇ Download CSV
-                </button>
+                <>
+                  <button
+                    className="pill pill--btn"
+                    onClick={isShuffled ? resetOrder : shuffleCards}
+                    aria-label={isShuffled ? "Reset card order" : "Shuffle cards"}
+                  >
+                    {isShuffled ? "↺ Reset Order" : "⇄ Shuffle"}
+                  </button>
+                  <button
+                    className="pill pill--btn"
+                    onClick={downloadCSV}
+                    aria-label="Download deck as CSV"
+                  >
+                    ⬇ Download CSV
+                  </button>
+                </>
               )}
             </div>
 

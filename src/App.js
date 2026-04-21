@@ -20,12 +20,12 @@ const CARDS_STORAGE_KEY = "flashcardmaker.cards.v1";
 const DECKS_STORAGE_KEY = "flashcardmaker.decks.v1";
 
 const HSK_LEVELS = [
-  { level: 1, label: "HSK 1", description: "Beginner (150 words)" },
-  { level: 2, label: "HSK 2", description: "Elementary (300 words)" },
-  { level: 3, label: "HSK 3", description: "Intermediate (600 words)" },
-  { level: 4, label: "HSK 4", description: "Upper-Intermediate (1200 words)" },
-  { level: 5, label: "HSK 5", description: "Advanced (2500 words)" },
-  { level: 6, label: "HSK 6", description: "Proficient (5000+ words)" },
+  { level: 1, label: "HSK 1", description: "Book 1" },
+  { level: 2, label: "HSK 2", description: "Book 2" },
+  { level: 3, label: "HSK 3", description: "Book 3" },
+  { level: 4, label: "HSK 4", description: "Book 4" },
+  { level: 5, label: "HSK 5", description: "Book 5" },
+  { level: 6, label: "HSK 6", description: "Book 6" },
 ];
 
 function App() {

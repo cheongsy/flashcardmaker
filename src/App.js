@@ -16,13 +16,28 @@ function normalizePinyin(value) {
     .replace(/v/g, "u");
 }
 
+const CARDS_STORAGE_KEY = "flashcardmaker.cards.v1";
+
 function App() {
   const [mode, setMode] = useState("study"); // "study" | "edit"
-  const [cards, setCards] = useState(() => [
-    { id: "1", hanzi: "你", pinyin: "nǐ", english: "you" },
-    { id: "2", hanzi: "好", pinyin: "hǎo", english: "good; well" },
-    { id: "3", hanzi: "谢", pinyin: "xiè", english: "thanks" },
-  ]);
+  const [cards, setCards] = useState(() => {
+    try {
+      const raw = localStorage.getItem(CARDS_STORAGE_KEY);
+      if (!raw) {
+        return [
+          { id: "1", hanzi: "你", pinyin: "nǐ", english: "you" },
+          { id: "2", hanzi: "好", pinyin: "hǎo", english: "good; well" },
+          { id: "3", hanzi: "谢", pinyin: "xiè", english: "thanks" },
+        ];
+      }
+
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed;
+    } catch {
+      return [];
+    }
+  });
 
   const [activeIndex, setActiveIndex] = useState(0);
   const activeCard = cards[activeIndex] ?? null;
@@ -90,6 +105,14 @@ function App() {
   const deleteCard = useCallback((id) => {
     setCards((prev) => prev.filter((c) => c.id !== id));
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(cards));
+    } catch {
+      // If storage is unavailable/full, keep app functional without persistence.
+    }
+  }, [cards]);
 
   useEffect(() => {
     if (activeIndex >= cards.length) {

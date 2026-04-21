@@ -106,6 +106,32 @@ function App() {
     setCards((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
+  const downloadCSV = useCallback(() => {
+    if (cards.length === 0) return;
+
+    // Create CSV content with headers
+    const headers = "character,pinyin,translation";
+    const rows = cards.map((card) => {
+      // Escape quotes and wrap fields in quotes to handle commas in content
+      const hanzi = `"${card.hanzi.replace(/"/g, '""')}"`;
+      const pinyin = `"${card.pinyin.replace(/"/g, '""')}"`;
+      const english = `"${card.english.replace(/"/g, '""')}"`;
+      return `${hanzi},${pinyin},${english}`;
+    });
+
+    const csvContent = [headers, ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "chinese-flashcards.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }, [cards]);
+
   useEffect(() => {
     try {
       localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(cards));
@@ -210,6 +236,15 @@ function App() {
               <div className="pill" aria-label="Score">
                 Score: <b>{stats.correct}</b>/<b>{stats.attempted}</b> ({accuracy}%)
               </div>
+              {cards.length > 0 && (
+                <button
+                  className="pill pill--btn"
+                  onClick={downloadCSV}
+                  aria-label="Download deck as CSV"
+                >
+                  ⬇ Download CSV
+                </button>
+              )}
             </div>
 
             {activeCard ? (

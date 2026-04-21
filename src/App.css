@@ -90,6 +90,18 @@
   color: var(--text);
 }
 
+.pill--btn {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.2s ease;
+}
+
+.pill--btn:hover {
+  background: rgba(255, 45, 149, 0.15);
+  border-color: rgba(255, 45, 149, 0.4);
+}
+
 .card {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);

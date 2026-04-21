@@ -166,6 +166,74 @@
   color: var(--muted);
 }
 
+.upload-section {
+  border: 1px solid var(--border);
+  background: rgba(66, 230, 154, 0.05);
+  border-radius: 14px;
+  padding: 14px;
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
+
+.upload-section__title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.upload-section__desc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.upload-section__controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.upload-section__input {
+  position: absolute;
+  left: -9999px;
+  opacity: 0;
+}
+
+.upload-status {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  animation: slideIn 0.3s ease;
+}
+
+.upload-status--success {
+  background: rgba(66, 230, 154, 0.15);
+  border: 1px solid rgba(66, 230, 154, 0.4);
+  color: #42e69a;
+}
+
+.upload-status--error {
+  background: rgba(255, 71, 111, 0.15);
+  border: 1px solid rgba(255, 71, 111, 0.4);
+  color: #ff476f;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .deck-overview {
   margin-top: 14px;
   border: 1px solid var(--border);

@@ -229,6 +229,8 @@ function App() {
   }, [goNext, goPrev, mode, submit, submitted]);
 
   const [draft, setDraft] = useState({ hanzi: "", pinyin: "", english: "" });
+  const [uploadStatus, setUploadStatus] = useState(null); // null | 'success' | 'error'
+  const fileInputRef = useRef(null);
   const canAdd =
     draft.hanzi.trim().length > 0 &&
     draft.pinyin.trim().length > 0 &&
@@ -252,6 +254,112 @@ function App() {
 
     setDraft({ hanzi: "", pinyin: "", english: "" });
   };
+
+  const parseCSV = useCallback((text) => {
+    // Remove UTF-8 BOM if present
+    const cleanText = text.startsWith('\uFEFF') ? text.slice(1) : text;
+    
+    // Split into lines and filter empty lines
+    const lines = cleanText.split('\n').filter(line => line.trim());
+    
+    if (lines.length === 0) return [];
+    
+    // Parse header to find column indices
+    const headerLine = lines[0].toLowerCase();
+    const headers = headerLine.split(',').map(h => h.trim().replace(/"/g, ''));
+    
+    const charIndex = headers.findIndex(h => h.includes('character') || h.includes('hanzi'));
+    const pinyinIndex = headers.findIndex(h => h.includes('pinyin'));
+    const transIndex = headers.findIndex(h => h.includes('translation') || h.includes('english'));
+    
+    if (charIndex === -1 || pinyinIndex === -1 || transIndex === -1) {
+      throw new Error('CSV must have headers: character, pinyin, and translation');
+    }
+    
+    // Parse data rows
+    const newCards = [];
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      // Simple CSV parsing (handles quoted fields)
+      const fields = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let j = 0; j < line.length; j++) {
+        const char = line[j];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          fields.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      fields.push(current.trim());
+      
+      const hanzi = fields[charIndex]?.replace(/"/g, '').trim();
+      const pinyin = fields[pinyinIndex]?.replace(/"/g, '').trim();
+      const english = fields[transIndex]?.replace(/"/g, '').trim();
+      
+      if (hanzi && pinyin && english) {
+        const id = typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : String(Date.now()) + i;
+        
+        newCards.push({ id, hanzi, pinyin, english });
+      }
+    }
+    
+    return newCards;
+  }, []);
+
+  const handleFileUpload = useCallback((e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.csv')) {
+      setUploadStatus('error');
+      setTimeout(() => setUploadStatus(null), 3000);
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const newCards = parseCSV(event.target.result);
+        
+        if (newCards.length === 0) {
+          setUploadStatus('error');
+          setTimeout(() => setUploadStatus(null), 3000);
+          return;
+        }
+        
+        // Add uploaded cards to current deck
+        setDecks((prev) => ({
+          ...prev,
+          [selectedDeck]: [...newCards, ...(prev[selectedDeck] || [])],
+        }));
+        
+        setActiveIndex(0);
+        setUploadStatus('success');
+        setTimeout(() => setUploadStatus(null), 3000);
+        
+        // Reset file input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      } catch (error) {
+        console.error('CSV parse error:', error);
+        setUploadStatus('error');
+        setTimeout(() => setUploadStatus(null), 3000);
+      }
+    };
+    
+    reader.readAsText(file);
+  }, [parseCSV, selectedDeck]);
 
   return (
     <div className="App">
@@ -539,6 +647,40 @@ function App() {
                 </button>
               </div>
             </form>
+
+            <div className="upload-section">
+              <div className="upload-section__title">Upload CSV to Deck</div>
+              <div className="upload-section__desc">
+                Import cards from a CSV file with headers: character, pinyin, translation
+              </div>
+              <div className="upload-section__controls">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                  className="upload-section__input"
+                  aria-label="Upload CSV file"
+                />
+                <button
+                  className="btnGhost"
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  📁 Choose CSV File
+                </button>
+              </div>
+              {uploadStatus === 'success' && (
+                <div className="upload-status upload-status--success">
+                  ✓ Cards uploaded successfully!
+                </div>
+              )}
+              {uploadStatus === 'error' && (
+                <div className="upload-status upload-status--error">
+                  ✗ Upload failed. Check CSV format.
+                </div>
+              )}
+            </div>
 
             <div className="list" aria-label="Card list">
               <div className="list__title">

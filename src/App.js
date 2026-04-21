@@ -17,27 +17,46 @@ function normalizePinyin(value) {
 }
 
 const CARDS_STORAGE_KEY = "flashcardmaker.cards.v1";
+const DECKS_STORAGE_KEY = "flashcardmaker.decks.v1";
+
+const HSK_LEVELS = [
+  { level: 1, label: "HSK 1", description: "Beginner (150 words)" },
+  { level: 2, label: "HSK 2", description: "Elementary (300 words)" },
+  { level: 3, label: "HSK 3", description: "Intermediate (600 words)" },
+  { level: 4, label: "HSK 4", description: "Upper-Intermediate (1200 words)" },
+  { level: 5, label: "HSK 5", description: "Advanced (2500 words)" },
+  { level: 6, label: "HSK 6", description: "Proficient (5000+ words)" },
+];
 
 function App() {
   const [mode, setMode] = useState("study"); // "study" | "edit"
-  const [cards, setCards] = useState(() => {
+  const [selectedDeck, setSelectedDeck] = useState(1); // HSK level 1-6
+  const [decks, setDecks] = useState(() => {
     try {
-      const raw = localStorage.getItem(CARDS_STORAGE_KEY);
+      const raw = localStorage.getItem(DECKS_STORAGE_KEY);
       if (!raw) {
-        return [
+        // Initialize with sample decks for each HSK level
+        const initialDecks = {};
+        HSK_LEVELS.forEach((hsk) => {
+          initialDecks[hsk.level] = [];
+        });
+        // Add sample cards to HSK 1
+        initialDecks[1] = [
           { id: "1", hanzi: "你", pinyin: "nǐ", english: "you" },
           { id: "2", hanzi: "好", pinyin: "hǎo", english: "good; well" },
           { id: "3", hanzi: "谢", pinyin: "xiè", english: "thanks" },
         ];
+        return initialDecks;
       }
-
       const parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
+      if (typeof parsed !== "object") return {};
       return parsed;
     } catch {
-      return [];
+      return {};
     }
   });
+
+  const cards = decks[selectedDeck] || [];
 
   const [isShuffled, setIsShuffled] = useState(false);
 
@@ -100,45 +119,44 @@ function App() {
   }, [activeCard]);
 
   const addCard = useCallback((newCard) => {
-    setCards((prev) => [{ ...newCard }, ...prev]);
+    setDecks((prev) => ({
+      ...prev,
+      [selectedDeck]: [newCard, ...(prev[selectedDeck] || [])],
+    }));
     setActiveIndex(0);
-  }, []);
+  }, [selectedDeck]);
 
   const deleteCard = useCallback((id) => {
-    setCards((prev) => prev.filter((c) => c.id !== id));
-  }, []);
+    setDecks((prev) => ({
+      ...prev,
+      [selectedDeck]: (prev[selectedDeck] || []).filter((c) => c.id !== id),
+    }));
+  }, [selectedDeck]);
+
+  const updateDeckCards = useCallback((newCards) => {
+    setDecks((prev) => ({
+      ...prev,
+      [selectedDeck]: newCards,
+    }));
+  }, [selectedDeck]);
 
   const shuffleCards = useCallback(() => {
-    setCards((prev) => {
-      if (prev.length === 0) return prev;
-      // Fisher-Yates shuffle algorithm
-      const shuffled = [...prev];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      return shuffled;
-    });
+    const currentCards = decks[selectedDeck] || [];
+    if (currentCards.length === 0) return;
+    
+    // Fisher-Yates shuffle algorithm
+    const shuffled = [...currentCards];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    updateDeckCards(shuffled);
     setIsShuffled(true);
     setActiveIndex(0);
-  }, []);
+  }, [decks, selectedDeck, updateDeckCards]);
 
   const resetOrder = useCallback(() => {
-    // Reload original order from localStorage
-    try {
-      const raw = localStorage.getItem(CARDS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setCards(parsed);
-          setIsShuffled(false);
-          setActiveIndex(0);
-          return;
-        }
-      }
-    } catch {
-      // Fallback: just disable shuffle flag
-    }
+    // For now, just reset shuffle flag since we don't track original order per deck
     setIsShuffled(false);
     setActiveIndex(0);
   }, []);
@@ -164,20 +182,20 @@ function App() {
     
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", "chinese-flashcards.csv");
+    link.setAttribute("download", `chinese-flashcards-hsk${selectedDeck}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  }, [cards]);
+  }, [cards, selectedDeck]);
 
   useEffect(() => {
     try {
-      localStorage.setItem(CARDS_STORAGE_KEY, JSON.stringify(cards));
+      localStorage.setItem(DECKS_STORAGE_KEY, JSON.stringify(decks));
     } catch {
       // If storage is unavailable/full, keep app functional without persistence.
     }
-  }, [cards]);
+  }, [decks]);
 
   useEffect(() => {
     if (activeIndex >= cards.length) {
@@ -246,29 +264,83 @@ function App() {
             </div>
           </div>
 
-          <div className="seg" role="tablist" aria-label="Mode">
-            <button
-              className={mode === "study" ? "seg__btn seg__btn--active" : "seg__btn"}
-              onClick={() => setMode("study")}
-              role="tab"
-              aria-selected={mode === "study"}
-            >
-              Study
-            </button>
-            <button
-              className={mode === "edit" ? "seg__btn seg__btn--active" : "seg__btn"}
-              onClick={() => setMode("edit")}
-              role="tab"
-              aria-selected={mode === "edit"}
-            >
-              Make cards
-            </button>
+          <div className="topbar__controls">
+            <div className="deck-selector">
+              <label htmlFor="deckLevel" className="deck-selector__label">Deck Level:</label>
+              <select
+                id="deckLevel"
+                value={selectedDeck}
+                onChange={(e) => {
+                  setSelectedDeck(Number(e.target.value));
+                  setActiveIndex(0);
+                  setIsShuffled(false);
+                  setStats({ attempted: 0, correct: 0 });
+                }}
+                className="deck-selector__select"
+                aria-label="Select HSK deck level"
+              >
+                {HSK_LEVELS.map((hsk) => (
+                  <option key={hsk.level} value={hsk.level}>
+                    {hsk.label} - {hsk.description}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="seg" role="tablist" aria-label="Mode">
+              <button
+                className={mode === "study" ? "seg__btn seg__btn--active" : "seg__btn"}
+                onClick={() => setMode("study")}
+                role="tab"
+                aria-selected={mode === "study"}
+              >
+                Study
+              </button>
+              <button
+                className={mode === "edit" ? "seg__btn seg__btn--active" : "seg__btn"}
+                onClick={() => setMode("edit")}
+                role="tab"
+                aria-selected={mode === "edit"}
+              >
+                Make cards
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="deck-overview">
+          <div className="deck-overview__title">Deck Overview</div>
+          <div className="deck-overview__grid">
+            {HSK_LEVELS.map((hsk) => {
+              const cardCount = (decks[hsk.level] || []).length;
+              const isActive = selectedDeck === hsk.level;
+              return (
+                <button
+                  key={hsk.level}
+                  className={`deck-overview__card ${isActive ? 'deck-overview__card--active' : ''}`}
+                  onClick={() => {
+                    setSelectedDeck(hsk.level);
+                    setActiveIndex(0);
+                    setIsShuffled(false);
+                    setStats({ attempted: 0, correct: 0 });
+                  }}
+                  aria-label={`Select ${hsk.label} with ${cardCount} cards`}
+                >
+                  <div className="deck-overview__level">{hsk.label}</div>
+                  <div className="deck-overview__count">{cardCount} cards</div>
+                  <div className="deck-overview__desc">{hsk.description}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {mode === "study" ? (
           <div className="panel">
             <div className="meta">
+              <div className="pill" aria-label="Current deck level">
+                {HSK_LEVELS.find(h => h.level === selectedDeck)?.label || 'HSK 1'}
+              </div>
               <div className="pill" aria-label="Deck size">
                 Deck: <b>{cards.length}</b>
               </div>
@@ -400,6 +472,15 @@ function App() {
           </div>
         ) : (
           <div className="panel">
+            <div className="deck-info">
+              <div className="deck-info__title">
+                Currently editing: {HSK_LEVELS.find(h => h.level === selectedDeck)?.label || 'HSK 1'}
+              </div>
+              <div className="deck-info__desc">
+                {HSK_LEVELS.find(h => h.level === selectedDeck)?.description || ''}
+              </div>
+            </div>
+
             <form className="form" onSubmit={onCreate} aria-label="Create flashcard">
               <div className="form__row">
                 <label className="label" htmlFor="hanzi">
@@ -460,9 +541,11 @@ function App() {
             </form>
 
             <div className="list" aria-label="Card list">
-              <div className="list__title">Deck ({cards.length})</div>
+              <div className="list__title">
+                {HSK_LEVELS.find(h => h.level === selectedDeck)?.label || 'HSK 1'} Deck ({cards.length})
+              </div>
               {cards.length === 0 ? (
-                <div className="emptySmall">No cards yet.</div>
+                <div className="emptySmall">No cards yet. Add some above!</div>
               ) : (
                 <ul className="list__items">
                   {cards.map((c) => (

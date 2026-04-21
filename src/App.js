@@ -145,7 +145,6 @@ function App() {
     });
 
     setDraft({ hanzi: "", pinyin: "", english: "" });
-    setMode("study");
   };
 
   return (

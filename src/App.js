@@ -28,6 +28,31 @@ const HSK_LEVELS = [
   { level: 6, label: "HSK 6", description: "Book 6" },
 ];
 
+function parseCSVFields(line, handleEscapedQuotes) {
+  const fields = [];
+  let current = "";
+  let inQuotes = false;
+
+  for (let j = 0; j < line.length; j++) {
+    const char = line[j];
+    if (char === '"') {
+      if (handleEscapedQuotes && inQuotes && line[j + 1] === '"') {
+        current += '"';
+        j += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (char === "," && !inQuotes) {
+      fields.push(current.trim());
+      current = "";
+    } else {
+      current += char;
+    }
+  }
+  fields.push(current.trim());
+  return fields;
+}
+
 function App() {
   const [mode, setMode] = useState("study"); // "study" | "edit"
   const [selectedDeck, setSelectedDeck] = useState(1); // HSK level 1-6
@@ -256,6 +281,8 @@ function App() {
   };
 
   const parseCSV = useCallback((text) => {
+    const handleEscapedQuotes = selectedDeck !== 4;
+
     // Remove UTF-8 BOM if present
     const cleanText = text.startsWith('\uFEFF') ? text.slice(1) : text;
     
@@ -275,6 +302,11 @@ function App() {
     if (charIndex === -1 || pinyinIndex === -1 || transIndex === -1) {
       throw new Error('CSV must have headers: character, pinyin, and translation');
     }
+
+    const cleanField = (value) => {
+      const trimmed = value?.trim() ?? "";
+      return handleEscapedQuotes ? trimmed : trimmed.replace(/"/g, "");
+    };
     
     // Parse data rows
     const newCards = [];
@@ -282,27 +314,11 @@ function App() {
       const line = lines[i].trim();
       if (!line) continue;
       
-      // Simple CSV parsing (handles quoted fields)
-      const fields = [];
-      let current = '';
-      let inQuotes = false;
+      const fields = parseCSVFields(line, handleEscapedQuotes);
       
-      for (let j = 0; j < line.length; j++) {
-        const char = line[j];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          fields.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      fields.push(current.trim());
-      
-      const hanzi = fields[charIndex]?.replace(/"/g, '').trim();
-      const pinyin = fields[pinyinIndex]?.replace(/"/g, '').trim();
-      const english = fields[transIndex]?.replace(/"/g, '').trim();
+      const hanzi = cleanField(fields[charIndex]);
+      const pinyin = cleanField(fields[pinyinIndex]);
+      const english = cleanField(fields[transIndex]);
       
       if (hanzi && pinyin && english) {
         const id = typeof crypto !== 'undefined' && crypto.randomUUID
@@ -314,7 +330,7 @@ function App() {
     }
     
     return newCards;
-  }, []);
+  }, [selectedDeck]);
 
   const handleFileUpload = useCallback((e) => {
     const file = e.target.files[0];
